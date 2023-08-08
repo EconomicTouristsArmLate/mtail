@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/google/mtail/internal/daemon"
 	"github.com/google/mtail/internal/exporter"
 	"github.com/google/mtail/internal/metrics"
 	"github.com/google/mtail/internal/mtail"
@@ -161,9 +162,13 @@ func main() {
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		sig := <-sigint
-		glog.Infof("Received %+v, exiting...", sig)
-		cancel()
+		select {
+		case sig := <-sigint:
+			glog.Infof("Received %+v, exiting...", sig)
+			cancel()
+		case <-daemon.SVCStopChan:
+			cancel()
+		}
 	}()
 
 	opts := []mtail.Option{
