@@ -91,6 +91,24 @@ the `logs` and `progs` flags to point to our two mounted volumes.
 The `-P` flag ensures `mtail-myapp`'s port 3903 is exposed for collection,
 refer to `docker ps` to find out where it's mapped to on the host.
 
+### Launching as Windows Service (SVC)
+mtail can be registered as a windows service.
+It emits very basic logs to the eventlog under the name `mtail` - for detailed application logs, check `C:\Windows/Temp\mtail.{INFO,WARNING,ERROR,FATAL}` log files.
+Example of registering mtail as a service:
+
+```PowerShell
+# remove old service definition
+sc.exe delete mtail; sc.exe stop mtail
+
+# (re)create service definition  - adjust log paths & program paths accordingly
+sc.exe create mtail start= auto binPath= "C:\Path\To\Your\mtail.exe -progs ... -logs ..."
+sc.exe start mtail
+
+# check status (alternatively in eventlog viewer)
+sc.exe query mtail
+(Get-EventLog -LogName System -Source "Service Control Manager" -after (Get-Date).AddDays(-1) | Select-Object -Property TimeGenerated, EntryType, Source, Message) -match mtail | Sort-Object TimeGenerated | Format-Table -AutoSize -Wrap
+```
+
 ## Writing the programme
 
 Read the [Programming Guide](Programming-Guide.md) for instructions on how to write an `mtail` program.
